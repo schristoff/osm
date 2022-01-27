@@ -51,8 +51,8 @@ spec:
     spec:
       serviceAccountName: bookbuyer
       nodeSelector:
-        kubernetes.io/arch: amd64
-        kubernetes.io/os: linux
+        kubernetes.io/arch: $SYS_ARCH
+        kubernetes.io/os: $SYS_OS
       containers:
         # Main container with APP
         - name: bookbuyer

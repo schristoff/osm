@@ -44,8 +44,8 @@ spec:
     spec:
       serviceAccountName: "$BOOKSTORE_SVC"
       nodeSelector:
-        kubernetes.io/arch: amd64
-        kubernetes.io/os: linux
+        kubernetes.io/arch: $SYS_ARCH
+        kubernetes.io/os: $SYS_OS
       containers:
         - image: curlimages/curl
           imagePullPolicy: IfNotPresent

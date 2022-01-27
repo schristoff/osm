@@ -60,8 +60,8 @@ spec:
     spec:
       serviceAccountName: tcp-echo
       nodeSelector:
-        kubernetes.io/arch: amd64
-        kubernetes.io/os: linux
+        kubernetes.io/arch: $SYS_ARCH
+        kubernetes.io/os: $SYS_OS
       containers:
       - name: tcp-echo-server
         image: "${CTR_REGISTRY}/tcp-echo-server:${CTR_TAG}"

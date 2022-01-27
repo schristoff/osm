@@ -42,8 +42,8 @@ spec:
     spec:
       serviceAccountName: tcp-client
       nodeSelector:
-        kubernetes.io/arch: amd64
-        kubernetes.io/os: linux
+        kubernetes.io/arch: $SYS_ARCH
+        kubernetes.io/os: $SYS_OS
       containers:
       - name: tcp-client
         image: "${CTR_REGISTRY}/tcp-client:${CTR_TAG}"

@@ -28,8 +28,8 @@ spec:
         app: vault
     spec:
       nodeSelector:
-        kubernetes.io/arch: amd64
-        kubernetes.io/os: linux
+        kubernetes.io/arch: $SYS_ARCH
+        kubernetes.io/os: $SYS_OS
       terminationGracePeriodSeconds: 10
       containers:
       - name: vault

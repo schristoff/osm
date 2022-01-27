@@ -25,6 +25,13 @@ osm:
       osmCRDs: ""
       # -- osm-boostrap's image digest
       osmBootstrap: ""
+  
+  #(schristoff)
+  nodeSelector:
+    
+      os: linux
+    
+      arch: arm64
 
 
   # -- `osm-controller` image pull secret

@@ -190,7 +190,8 @@
                 "enablePrivilegedInitContainer",
                 "injector",
                 "osmBootstrap",
-                "featureFlags"
+                "featureFlags",
+                "nodeSelector"
             ],
             "properties": {
                 "osmController": {
@@ -330,6 +331,30 @@
                         }
                     },
                     "additionalProperties": false
+                },
+                "nodeSelector": {
+                    "$id": "#/properties/osm/properties/nodeSelector",
+                    "type": "object",
+                    "title": "The nodeSelector os and arch details",
+                    "required": [
+                        "os",
+                        "arch"
+                    ],
+                    "properties" : {
+                        "os": {
+                            "$id": "#/properties/osm/properties/nodeSelector/os",
+                            "type": "string",
+                            "title": "the os for the nodeselector",
+                            "description": ""
+                        },
+                        "arch": {
+                            "$id": "#/properties/osm/properties/nodeSelector/arch",
+                            "type": "string",
+                            "title": "the arch for the nodeselector",
+                            "description": ""
+                        }
+
+                    }
                 },
                 "sidecarImage": {
                     "$id": "#/properties/osm/properties/sidecarImage",
