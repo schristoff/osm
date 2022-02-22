@@ -136,14 +136,14 @@ test-e2e: docker-build-osm build-osm docker-build-tcp-echo-server
 	cp .env.example .env
 
 .PHONY: kind-demo
-kind-demo: export CTR_REGISTRY=localhost:5000
+kind-demo: export CTR_REGISTRY=127.0.0.1:5000
 kind-demo: .env kind-up clean-osm
 	./demo/run-osm-demo.sh
 
 .PHONE: build-bookwatcher
 build-bookwatcher:
 	go build -o ./demo/bin/bookwatcher/bookwatcher ./demo/cmd/bookwatcher
-
+	
 DEMO_TARGETS = bookbuyer bookthief bookstore bookwarehouse tcp-echo-server tcp-client
 # docker-build-bookbuyer, etc
 DOCKER_DEMO_TARGETS = $(addprefix docker-build-, $(DEMO_TARGETS))
