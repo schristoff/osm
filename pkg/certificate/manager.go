@@ -28,7 +28,7 @@ const (
 var errCertNotFound = errors.New("failed to find cert")
 
 //todo(schristoff): Should we change this to Manager?
-type CertManager struct {
+type Manager struct {
 	provider                    Provider
 	ca                          *Certificate
 	cache                       sync.Map
@@ -37,24 +37,24 @@ type CertManager struct {
 }
 
 //NewManager (todo:schristoff)
-func NewManager(ca *Certificate, provider Provider, msgBroker *messaging.Broker, serviceCertValidityDuration time.Duration) *CertManager {
-	cm := &CertManager{
+func NewManager(ca *Certificate, provider Provider, msgBroker *messaging.Broker, serviceCertValidityDuration time.Duration) *Manager {
+	m := &Manager{
 		ca:                          ca,
 		provider:                    provider,
 		cache:                       sync.Map{}, // NOTE: the empty struct is valid.
 		msgBroker:                   msgBroker,
 		serviceCertValidityDuration: serviceCertValidityDuration,
 	}
-	cm.start(checkCertificateExpirationInterval)
-	return cm
+	m.start(checkCertificateExpirationInterval)
+	return m
 }
 
-func (cm *CertManager) deleteFromCache(cn CommonName) {
-	cm.cache.Delete(cn)
+func (m *Manager) deleteFromCache(cn CommonName) {
+	m.cache.Delete(cn)
 }
 
-func (cm *CertManager) getFromCache(cn CommonName) *Certificate {
-	if certInterface, exists := cm.cache.Load(cn); exists {
+func (m *Manager) getFromCache(cn CommonName) *Certificate {
+	if certInterface, exists := m.cache.Load(cn); exists {
 		cert := certInterface.(*Certificate)
 		log.Trace().Msgf("Certificate found in cache SerialNumber=%s", cert.GetSerialNumber())
 		if ShouldRotate(cert) {
@@ -67,19 +67,19 @@ func (cm *CertManager) getFromCache(cn CommonName) *Certificate {
 }
 
 // IssueCertificate implements Manager and returns a newly issued
-func (cm *CertManager) IssueCertificate(cn CommonName, validityPeriod time.Duration) (*Certificate, error) {
+func (m *Manager) IssueCertificate(cn CommonName, validityPeriod time.Duration) (*Certificate, error) {
 	start := time.Now()
 
-	if cert := cm.getFromCache(cn); cert != nil {
+	if cert := m.getFromCache(cn); cert != nil {
 		return cert, nil
 	}
 
-	cert, err := cm.provider.IssueCertificate(cn, validityPeriod)
+	cert, err := m.provider.IssueCertificate(cn, validityPeriod)
 	if err != nil {
 		return cert, err
 	}
 
-	cm.cache.Store(cn, cert)
+	m.cache.Store(cn, cert)
 
 	log.Trace().Msgf("It took %+v to issue certificate with SerialNumber=%s", time.Since(start), cert.GetSerialNumber())
 
@@ -87,24 +87,24 @@ func (cm *CertManager) IssueCertificate(cn CommonName, validityPeriod time.Durat
 }
 
 // ReleaseCertificate is called when a cert will no longer be needed and should be removed from the system.
-func (cm *CertManager) ReleaseCertificate(cn CommonName) {
+func (m *Manager) ReleaseCertificate(cn CommonName) {
 	log.Trace().Msgf("Releasing certificate %s", cn)
-	cm.deleteFromCache(cn)
+	m.deleteFromCache(cn)
 }
 
 // GetCertificate returns a certificate given its Common Name (CN)
-func (cm *CertManager) GetCertificate(cn CommonName) (*Certificate, error) {
-	if cert := cm.getFromCache(cn); cert != nil {
+func (m *Manager) GetCertificate(cn CommonName) (*Certificate, error) {
+	if cert := m.getFromCache(cn); cert != nil {
 		return cert, nil
 	}
 	return nil, errCertNotFound
 }
 
 // RotateCertificate implements Manager and rotates an existing
-func (cm *CertManager) RotateCertificate(cn CommonName) (*Certificate, error) {
+func (m *Manager) RotateCertificate(cn CommonName) (*Certificate, error) {
 	start := time.Now()
 
-	oldObj, ok := cm.cache.Load(cn)
+	oldObj, ok := m.cache.Load(cn)
 	if !ok {
 		return nil, errors.Errorf("Old certificate does not exist for CN=%s", cn)
 	}
@@ -114,14 +114,14 @@ func (cm *CertManager) RotateCertificate(cn CommonName) (*Certificate, error) {
 		return nil, errors.Errorf("unexpected type %T for old certificate does not exist for CN=%s", oldCert, cn)
 	}
 
-	newCert, err := cm.provider.IssueCertificate(cn, cm.serviceCertValidityDuration)
+	newCert, err := m.provider.IssueCertificate(cn, m.serviceCertValidityDuration)
 	if err != nil {
 		return nil, err
 	}
 
-	cm.cache.Store(cn, newCert)
+	m.cache.Store(cn, newCert)
 
-	cm.msgBroker.GetCertPubSub().Pub(events.PubSubMessage{
+	m.msgBroker.GetCertPubSub().Pub(events.PubSubMessage{
 		Kind:   announcements.CertificateRotated,
 		NewObj: newCert,
 		OldObj: oldCert,
@@ -133,9 +133,9 @@ func (cm *CertManager) RotateCertificate(cn CommonName) (*Certificate, error) {
 }
 
 // ListCertificates lists all certificates issued
-func (cm *CertManager) ListCertificates() ([]*Certificate, error) {
+func (m *Manager) ListCertificates() ([]*Certificate, error) {
 	var certs []*Certificate
-	cm.cache.Range(func(cn interface{}, certInterface interface{}) bool {
+	m.cache.Range(func(cn interface{}, certInterface interface{}) bool {
 		certs = append(certs, certInterface.(*Certificate))
 		return true // continue the iteration
 	})
@@ -143,26 +143,26 @@ func (cm *CertManager) ListCertificates() ([]*Certificate, error) {
 }
 
 // GetRootCertificate returns the root
-func (cm *CertManager) GetRootCertificate() *Certificate {
-	return cm.ca
+func (m *Manager) GetRootCertificate() *Certificate {
+	return m.ca
 }
 
 // Start starts a new facility for automatic certificate rotation.
-func (cm *CertManager) start(checkInterval time.Duration) {
+func (m *Manager) start(checkInterval time.Duration) {
 	// iterate over the list of certificates
 	// when a cert needs to be rotated - call RotateCertificate()
 	ticker := time.NewTicker(checkInterval)
 	go func() {
 		for {
-			cm.checkAndRotate()
+			m.checkAndRotate()
 			<-ticker.C
 		}
 	}()
 }
 
 //todo(schristoff): point
-func (cm *CertManager) checkAndRotate() {
-	certs, err := cm.ListCertificates()
+func (m *Manager) checkAndRotate() {
+	certs, err := m.ListCertificates()
 	if err != nil {
 		log.Error().Err(err).Msgf("Error listing all certificates")
 	}
@@ -179,7 +179,7 @@ func (cm *CertManager) checkAndRotate() {
 
 		if shouldRotate {
 			// Remove the certificate from the cache of the certificate manager
-			newCert, err := cm.RotateCertificate(cert.GetCommonName())
+			newCert, err := m.RotateCertificate(cert.GetCommonName())
 			if err != nil {
 				// TODO(#3962): metric might not be scraped before process restart resulting from this error
 				log.Error().Err(err).Str(errcode.Kind, errcode.GetErrCodeWithMetric(errcode.ErrRotatingCert)).
@@ -204,9 +204,9 @@ func ShouldRotate(cert *Certificate) bool {
 }
 
 // ListIssuedCertificates implements CertificateDebugger interface and returns the list of issued certificates.
-func (cm *CertManager) ListIssuedCertificates() []*Certificate {
+func (m *Manager) ListIssuedCertificates() []*Certificate {
 	var certs []*Certificate
-	cm.cache.Range(func(cnInterface interface{}, certInterface interface{}) bool {
+	m.cache.Range(func(cnInterface interface{}, certInterface interface{}) bool {
 		certs = append(certs, certInterface.(*Certificate))
 		return true // continue the iteration
 	})
