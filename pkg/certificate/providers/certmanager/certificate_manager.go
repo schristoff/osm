@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/openservicemesh/osm/pkg/certificate"
+	"github.com/openservicemesh/osm/pkg/errcode"
+
 	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	cmversionedclient "github.com/jetstack/cert-manager/pkg/client/clientset/versioned"
 	cminformers "github.com/jetstack/cert-manager/pkg/client/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/openservicemesh/osm/pkg/certificate"
-	"github.com/openservicemesh/osm/pkg/errcode"
 )
 
 // NewProvider will construct a new certificate.Certificate implemented
@@ -45,14 +45,15 @@ func NewProvider(
 	}, nil
 }
 
-// issue will request a new signed certificate from the configured cert-manager
+// IssueCertificate will request a new signed certificate from the configured cert-manager
 // issuer.
-func (cm *Provider) IssueCertificate(cn certificate.CommonName, validityPeriod time.Duration) (*certificate.Certificate, error) {
+func (p *Provider) IssueCertificate(cn certificate.CommonName, validityPeriod time.Duration) (*certificate.Certificate, error) {
 	duration := &metav1.Duration{
 		Duration: validityPeriod,
 	}
 
-	certPrivKey, err := rsa.GenerateKey(rand.Reader, cm.keySize)
+	//todo(schristoff): Fix keySize
+	certPrivKey, err := rsa.GenerateKey(rand.Reader, p.keySize)
 	if err != nil {
 		// TODO(#3962): metric might not be scraped before process restart resulting from this error
 		log.Error().Err(err).Str(errcode.Kind, errcode.GetErrCodeWithMetric(errcode.ErrGeneratingPrivateKey)).
@@ -95,7 +96,7 @@ func (cm *Provider) IssueCertificate(cn certificate.CommonName, validityPeriod t
 	cr := &cmapi.CertificateRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "osm-",
-			Namespace:    cm.namespace,
+			Namespace:    p.namespace,
 		},
 		Spec: cmapi.CertificateRequestSpec{
 			Duration: duration,
@@ -104,19 +105,19 @@ func (cm *Provider) IssueCertificate(cn certificate.CommonName, validityPeriod t
 				cmapi.UsageKeyEncipherment, cmapi.UsageDigitalSignature,
 			},
 			Request:   csrPEM,
-			IssuerRef: cm.issuerRef,
+			IssuerRef: p.issuerRef,
 		},
 	}
 
-	cr, err = cm.client.Create(context.TODO(), cr, metav1.CreateOptions{})
+	cr, err = p.client.Create(context.TODO(), cr, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debug().Msgf("Created CertificateRequest %s/%s for CN=%s", cm.namespace, cr.Name, cn)
+	log.Debug().Msgf("Created CertificateRequest %s/%s for CN=%s", p.namespace, cr.Name, cn)
 
 	// TODO: add timeout option instead of 60s hard coded.
-	cr, err = cm.waitForCertificateReady(cr.Name, time.Second*60)
+	cr, err = p.waitForCertificateReady(cr.Name, time.Second*60)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +128,8 @@ func (cm *Provider) IssueCertificate(cn certificate.CommonName, validityPeriod t
 	}
 
 	defer func() {
-		if err := cm.client.Delete(context.TODO(), cr.Name, metav1.DeleteOptions{}); err != nil {
-			log.Error().Err(err).Msgf("failed to delete CertificateRequest %s/%s", cm.namespace, cr.Name)
+		if err := p.client.Delete(context.TODO(), cr.Name, metav1.DeleteOptions{}); err != nil {
+			log.Error().Err(err).Msgf("failed to delete CertificateRequest %s/%s", p.namespace, cr.Name)
 		}
 	}()
 

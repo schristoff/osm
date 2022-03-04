@@ -27,6 +27,7 @@ const (
 
 var errCertNotFound = errors.New("failed to find cert")
 
+//todo(schristoff): Should we change this to Manager?
 type CertManager struct {
 	provider                    Provider
 	ca                          *Certificate
@@ -35,6 +36,7 @@ type CertManager struct {
 	serviceCertValidityDuration time.Duration
 }
 
+//NewManager (todo:schristoff)
 func NewManager(ca *Certificate, provider Provider, msgBroker *messaging.Broker, serviceCertValidityDuration time.Duration) *CertManager {
 	cm := &CertManager{
 		ca:                          ca,

@@ -12,7 +12,11 @@ import (
 
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
+<<<<<<< HEAD
 func (cm *Provider) waitForCertificateReady(name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
+=======
+func (p *Provider) waitForCertificateReady(name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
+>>>>>>> 4eb34f6b (refactor certManager and vault providers)
 	var (
 		cr  *cmapi.CertificateRequest
 		err error
@@ -20,9 +24,9 @@ func (cm *Provider) waitForCertificateReady(name string, timeout time.Duration) 
 
 	err = wait.PollImmediate(time.Second, timeout,
 		func() (bool, error) {
-			cr, err = cm.crLister.Get(name)
+			cr, err = p.crLister.Get(name)
 			if apierrors.IsNotFound(err) {
-				log.Info().Msgf("Failed to find CertificateRequest %s/%s", cm.namespace, name)
+				log.Info().Msgf("Failed to find CertificateRequest %s/%s", p.namespace, name)
 				return false, nil
 			}
 
@@ -36,7 +40,7 @@ func (cm *Provider) waitForCertificateReady(name string, timeout time.Duration) 
 			})
 			if !isReady {
 				log.Info().Msgf("CertificateRequest not ready %s/%s: %+v",
-					cm.namespace, name, cr.Status.Conditions)
+					p.namespace, name, cr.Status.Conditions)
 			}
 
 			return isReady, nil

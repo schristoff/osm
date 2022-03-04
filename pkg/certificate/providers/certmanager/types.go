@@ -27,7 +27,6 @@ type Provider struct {
 	// The Certificate Authority root certificate to be used by this certificate
 	// manager.
 	ca *certificate.Certificate
-
 	// Control plane namespace where CertificateRequests are created.
 	namespace string
 
