@@ -27,7 +27,6 @@ const (
 
 var errCertNotFound = errors.New("failed to find cert")
 
-//todo(schristoff): Should we change this to Manager?
 type Manager struct {
 	provider                    Provider
 	ca                          *Certificate
@@ -66,7 +65,7 @@ func (m *Manager) getFromCache(cn CommonName) *Certificate {
 	return nil
 }
 
-// IssueCertificate implements Manager and returns a newly issued
+// IssueCertificate implements Manager and returns a newly issued certificate
 func (m *Manager) IssueCertificate(cn CommonName, validityPeriod time.Duration) (*Certificate, error) {
 	start := time.Now()
 

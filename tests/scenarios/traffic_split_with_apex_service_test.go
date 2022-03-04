@@ -51,7 +51,7 @@ func TestRDSNewResponseWithTrafficSplit(t *testing.T) {
 		EnableEgressPolicy: false,
 	}).AnyTimes()
 
-	resources, err := rds.NewResponse(meshCatalog, proxy, nil, mockConfigurator, nil, proxyRegistry)
+	resources, err := rds.NewResponse(meshCatalog, proxy, nil, mockConfigurator, certificate.Manager{}, proxyRegistry)
 	a.Nil(err)
 	a.Len(resources, 1) // only outbound routes configured for this test
 
