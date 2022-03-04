@@ -12,11 +12,7 @@ import (
 
 // WaitForCertificateRequestReady waits for the CertificateRequest resource to
 // enter a Ready state.
-<<<<<<< HEAD
-func (cm *Provider) waitForCertificateReady(name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
-=======
 func (p *Provider) waitForCertificateReady(name string, timeout time.Duration) (*cmapi.CertificateRequest, error) {
->>>>>>> 4eb34f6b (refactor certManager and vault providers)
 	var (
 		cr  *cmapi.CertificateRequest
 		err error
