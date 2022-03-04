@@ -46,6 +46,9 @@ func NewProvider(opts *Options) (*Provider, error) {
 
 	log.Info().Msgf("Created Vault CertManager, with role=%q at %v", opts.Role, vaultAddr)
 
+	return p, nil
+}
+
 func (p *Provider) IssueCertificate(cn certificate.CommonName, validityPeriod time.Duration) (*certificate.Certificate, error) {
 	secret, err := p.client.Logical().Write(getIssueURL(p.role).String(), getIssuanceData(cn, validityPeriod))
 	if err != nil {
